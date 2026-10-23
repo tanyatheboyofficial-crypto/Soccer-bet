@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Register — BetPulse</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    .auth-box {
+      background: #141414; padding: 32px 28px; border-radius: 16px;
+      border: 1px solid #1a1a1a; max-width: 400px; width: 100%; text-align: center;
+    }
+    .auth-logo { font-size: 1.8rem; font-weight: 900; color: #fff; letter-spacing: 1.5px; margin-bottom: 4px; }
+    .auth-logo span { color: #ff1744; }
+    .auth-sub { color: #888; margin-bottom: 24px; font-size: .85rem; }
+    .input-group {
+      display: flex; align-items: center; background: #0a0a0a;
+      border-radius: 10px; border: 1px solid #1a1a1a; margin-bottom: 12px;
+      padding: 0 14px; transition: border-color .2s;
+    }
+    .input-group:focus-within { border-color: #ff1744; }
+    .input-group i { color: #555; margin-right: 10px; font-size: .9rem; }
+    .input-group input { width: 100%; padding: 12px 0; background: transparent; border: none; color: #fff; font-size: .95rem; outline: none; }
+    .input-group input::placeholder { color: #555; }
+    .btn-primary {
+      width: 100%; padding: 14px; background: #ff1744; color: #fff;
+      border: none; border-radius: 10px; font-weight: 800; font-size: .95rem;
+      cursor: pointer; transition: background .15s; margin-top: 8px;
+    }
+    .btn-primary:hover { background: #d50000; }
+    .btn-primary:disabled { background: #444; cursor: not-allowed; }
+    .auth-link { margin-top: 16px; color: #555; font-size: .85rem; }
+    .auth-link a { color: #ff1744; text-decoration: none; font-weight: 600; }
+    .auth-link a:hover { text-decoration: underline; }
+    .err-msg { color: #ff1744; font-size: .8rem; margin-top: 8px; min-height: 18px; text-align: center; font-weight: 600; }
+    .success-msg { color: #00e676; font-size: .8rem; margin-top: 8px; text-align: center; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="auth-box">
+    <div class="auth-logo">BET<span>PULSE</span></div>
+    <p class="auth-sub">BTTS Predictions AI · Create account</p>
+
+    <form id="registerForm">
+      <div class="input-group">
+        <i class="fas fa-user"></i>
+        <input type="text" id="username" placeholder="Choose username" autocomplete="username" required minlength="3" />
+      </div>
+      <div class="input-group">
+        <i class="fas fa-lock"></i>
+        <input type="password" id="password" placeholder="Password (min 6 chars)" autocomplete="new-password" required minlength="6" />
+      </div>
+      <div class="input-group">
+        <i class="fas fa-users"></i>
+        <input type="text" id="referralCode" placeholder="Referral code (optional)" />
+      </div>
+      <button type="submit" class="btn-primary" id="registerBtn">
+        <i class="fas fa-user-plus"></i> Create Account
+      </button>
+      <div class="err-msg" id="errMsg"></div>
+      <div class="success-msg" id="successMsg"></div>
+    </form>
+
+    <p class="auth-link">Already have an account? <a href="/login">Login</a></p>
+    <p class="auth-link"><a href="/terms">Terms &amp; Conditions</a></p>
+  </div>
+
+  <script>
+    // Prefill referral code from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const refFromUrl = urlParams.get('ref');
+    if (refFromUrl) {
+      document.getElementById('referralCode').value = refFromUrl;
+    }
+
+    const form = document.getElementById('registerForm');
+    const btn = document.getElementById('registerBtn');
+    const err = document.getElementById('errMsg');
+    const ok = document.getElementById('successMsg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err.textContent = '';
+      ok.textContent = '';
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const referralCode = document.getElementById('referralCode').value.trim() || undefined;
+
+      if (username.length < 3) { err.textContent = 'Username must be 3+ characters'; return; }
+      if (password.length < 6) { err.textContent = 'Password must be 6+ characters'; return; }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, referralCode })
+        });
+        const data = await res.json();
+        if (data.success) {
+          ok.textContent = 'Account created! Redirecting to login...';
+          setTimeout(() => window.location.href = '/login', 1200);
+        } else {
+          err.textContent = data.error || 'Registration failed';
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+        }
+      } catch (error) {
+        err.textContent = 'Error: ' + error.message;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+      }
+    });
+  </script>
+</body>
+</html>
