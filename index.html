@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BetPulse — BTTS Predictions AI</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .perf-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      background: linear-gradient(135deg, rgba(0,230,118,.06), rgba(255,171,0,.04));
+      border: 1px solid rgba(0,230,118,.2);
+      border-radius: 12px;
+      padding: 12px;
+      margin: 12px 0 20px;
+    }
+    .perf-strip .item { text-align: center; }
+    .perf-strip .num { font-size: 1.15rem; font-weight: 900; font-family: monospace; color: #00e676; }
+    .perf-strip .num.amber { color: #ffab00; }
+    .perf-strip .num.blue { color: #66b2ff; }
+    .perf-strip .lbl { font-size: .55rem; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+    .stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 20px; }
+    .stat { background: #141414; border: 1px solid #1a1a1a; border-radius: 10px; padding: 12px; text-align: center; }
+    .stat .number { font-size: 1.15rem; font-weight: 900; color: #fff; font-family: monospace; }
+    .stat .label { font-size: .55rem; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+    .pub-btts-card {
+      background: #141414; border: 1px solid #1a1a1a; border-radius: 12px;
+      padding: 12px 14px; margin-bottom: 8px;
+    }
+    .pub-btts-card.elite { border-color: #ffab00; background: linear-gradient(135deg, rgba(255,171,0,.05), #141414); }
+    .pub-btts-card.strong { border-color: rgba(0,230,118,.4); }
+
+    .pub-teams { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .pub-team { font-size: .82rem; color: #fff; font-weight: 700; flex: 1; min-width: 0; }
+    .pub-team.right { text-align: right; }
+    .pub-vs { color: #444; font-size: .6rem; font-weight: 800; padding: 0 4px; }
+    .pub-league { font-size: .6rem; color: #666; margin-top: 2px; }
+
+    .pub-pick-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 8px; }
+    .pub-pick-row.yes { background: rgba(0,230,118,.08); border: 1px solid rgba(0,230,118,.25); }
+    .pub-pick-row.no { background: rgba(255,171,0,.06); border: 1px solid rgba(255,171,0,.2); }
+    .pub-pick-row .lbl { font-size: .6rem; color: #888; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    .pub-pick-row .pick { font-size: 1rem; font-weight: 900; color: #00e676; }
+    .pub-pick-row.no .pick { color: #ffab00; }
+    .pub-pick-row .prob { font-size: 1.1rem; font-weight: 900; font-family: monospace; color: #fff; }
+  </style>
+</head>
+<body>
+<div class="public-wrap">
+  <header class="app-header">
+    <div class="logo">BET<span>PULSE</span></div>
+    <div class="header-right">
+      <a href="/login" class="btn small outline">Login</a>
+      <a href="/register" class="btn small">Register</a>
+    </div>
+  </header>
+
+  <div class="public-hero">
+    <h1>BTTS Predictions AI</h1>
+    <p class="sub">Shot-level xG · Tiered confidence · Live bookmaker odds</p>
+    <div class="badge-row">
+      <span class="badge"><i class="fas fa-futbol"></i> BTTS specialist</span>
+      <span class="badge gold"><i class="fas fa-crown"></i> Elite tier</span>
+      <span class="badge green"><i class="fas fa-coins"></i> Live odds</span>
+    </div>
+  </div>
+
+  <div class="perf-strip">
+    <div class="item"><div class="num" id="perfElite">--</div><div class="lbl">Elite accuracy</div></div>
+    <div class="item"><div class="num amber" id="perfStrong">--</div><div class="lbl">Strong accuracy</div></div>
+    <div class="item"><div class="num blue" id="perfBtts">--</div><div class="lbl">Overall BTTS</div></div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><div class="number" id="statTotal">--</div><div class="label">BTTS picks</div></div>
+    <div class="stat"><div class="number">30</div><div class="label">Leagues</div></div>
+    <div class="stat"><div class="number">24/7</div><div class="label">Live data</div></div>
+  </div>
+
+  <h2 class="section-title"><i class="fas fa-bolt"></i> Today's BTTS Picks</h2>
+  <p class="section-sub">Free preview — no account needed</p>
+
+  <div id="publicPredictions" class="predictions-list">
+    <p class="loading-text">Loading BTTS predictions...</p>
+  </div>
+
+  <div class="cta-box">
+    <h3>Unlock Elite BTTS picks</h3>
+    <p>Free accounts see Strong and Value tiers. VIP unlocks Elite tier (82%+ AI confidence), all tickets, and live win rates.</p>
+    <a href="/register" class="btn" style="width:100%;padding:14px;"><i class="fas fa-user-plus"></i> Create Free Account</a>
+  </div>
+
+  <div class="footer-links">
+    <a href="/terms">Terms</a>
+    <a href="https://wa.me/263775342051" target="_blank">Support</a>
+  </div>
+
+  <div class="powered-by">Powered by <strong>BetPulse</strong></div>
+</div>
+
+<script>
+  async function loadPublicPredictions() {
+    const list = document.getElementById('publicPredictions');
+    try {
+      const res = await fetch('/api/public/predictions');
+      const data = await res.json();
+      if (!data.predictions?.length) {
+        list.innerHTML = '<p class="loading-text">No BTTS picks right now. Check back soon.</p>';
+        return;
+      }
+      document.getElementById('statTotal').textContent = data.total || data.predictions.length;
+      list.innerHTML = data.predictions.map(renderPubCard).join('');
+    } catch (e) {
+      list.innerHTML = '<p class="loading-text">Could not load predictions</p>';
+    }
+  }
+
+  async function loadPerf() {
+    // Public fallback — replace with real numbers once you have sample
+    document.getElementById('perfElite').textContent = '80%+';
+    document.getElementById('perfStrong').textContent = '74%+';
+    document.getElementById('perfBtts').textContent = '70%+';
+  }
+
+  function renderPubCard(m) {
+    const b = m.bttsPick || {};
+    const tier = b.tier || 'value';
+    const isYes = b.pick === 'Yes';
+    if (tier === 'elite') {
+      // Don't show elite publicly — lock it
+      return `
+        <div class="pub-btts-card elite" style="position:relative;overflow:hidden;">
+          <div style="filter:blur(6px);opacity:.35;">
+            <div class="pub-teams">
+              <span class="pub-team">${m.homeTeam.name}</span>
+              <span class="pub-vs">VS</span>
+              <span class="pub-team right">${m.awayTeam.name}</span>
+            </div>
+            <div class="pub-pick-row yes">
+              <div><div class="lbl">BTTS</div><div class="pick">Yes</div></div>
+              <div class="prob">${b.prob}%</div>
+            </div>
+          </div>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+            <span style="background:linear-gradient(135deg,#ffab00,#ff6d00);color:#0a0a0a;padding:3px 10px;border-radius:12px;font-size:.55rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;"><i class="fas fa-crown"></i> Elite BTTS</span>
+            <div style="font-size:.68rem;color:#ffab00;font-weight:800;"><i class="fas fa-lock"></i> VIP ONLY</div>
+            <a href="/register" class="btn small gold" style="text-decoration:none;padding:5px 14px;font-size:.65rem;">Unlock</a>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="pub-btts-card ${tier}">
+        <div class="pub-teams">
+          <span class="pub-team">${m.homeTeam.name}</span>
+          <span class="pub-vs">VS</span>
+          <span class="pub-team right">${m.awayTeam.name}</span>
+        </div>
+        <div class="pub-league" style="text-align:center;margin-bottom:8px;">${m.league} · ${formatTime(m.kickoff)}</div>
+        <div class="pub-pick-row ${isYes ? 'yes' : 'no'}">
+          <div>
+            <div class="lbl">BTTS</div>
+            <div class="pick">${b.pick}</div>
+          </div>
+          <div class="prob">${b.prob}%</div>
+        </div>
+      </div>`;
+  }
+
+  function formatTime(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString([], { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+    } catch { return '--'; }
+  }
+
+  const token = localStorage.getItem('token');
+  if (token) {
+    fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          if (d.user.role === 'admin' || d.user.role === 'superadmin') window.location.href = '/admin';
+          else window.location.href = '/dashboard';
+        }
+      }).catch(() => {});
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadPublicPredictions();
+    loadPerf();
+  });
+</script>
+</body>
+</html>

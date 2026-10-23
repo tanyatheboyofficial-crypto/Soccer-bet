@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — BetPulse</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .admin-container { max-width: 960px; margin: 0 auto; padding: 16px; }
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; margin-bottom: 12px; border-bottom: 1px solid #1a1a1a; }
+    .logo { font-size: 1.2rem; font-weight: 900; color: #fff; letter-spacing: 1px; }
+    .logo span { color: #ff1744; }
+    .tabs { display: flex; gap: 6px; margin: 16px 0; flex-wrap: wrap; }
+    .tabs button {
+      background: #141414; color: #888; border: 1px solid #1a1a1a;
+      padding: 8px 16px; border-radius: 8px; cursor: pointer;
+      font-size: .78rem; font-weight: 700; display: inline-flex;
+      align-items: center; gap: 6px;
+    }
+    .tabs button.active { background: #ff1744; color: #fff; border-color: #ff1744; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: .75rem; color: #888; margin-bottom: 4px; font-weight: 700; }
+
+    .upload-zone {
+      border: 2px dashed #2a2a2a; border-radius: 10px;
+      padding: 20px; text-align: center; cursor: pointer;
+      transition: all .2s; margin-bottom: 12px;
+    }
+    .upload-zone:hover { border-color: #ff1744; }
+    .upload-zone.has-image { border-color: #00e676; background: rgba(0,230,118,.05); }
+    .upload-preview { max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 8px; }
+    .ticket-thumb { width: 100%; max-width: 200px; border-radius: 8px; margin-top: 8px; }
+
+    .status-badge { padding: 2px 10px; border-radius: 12px; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; }
+    .status-badge.pending { background: rgba(255,171,0,0.15); color: #ffab00; }
+    .status-badge.won { background: rgba(0,230,118,0.15); color: #00e676; }
+    .status-badge.lost { background: rgba(255,23,68,0.15); color: #ff1744; }
+
+    .payout-preview {
+      background: linear-gradient(135deg, rgba(0,230,118,.06), rgba(255,171,0,.04));
+      border: 1px solid rgba(0,230,118,.25); border-radius: 10px;
+      padding: 12px; margin: 10px 0 14px;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    }
+    .payout-cell { text-align: center; }
+    .payout-cell .label { font-size: .55rem; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+    .payout-cell .val { font-family: monospace; font-size: 1rem; font-weight: 800; color: #00e676; }
+    .payout-cell .val.odds { color: #ffab00; }
+    .payout-cell .val.legs { color: #66b2ff; }
+
+    .rule-card { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+    .rule-card.disabled { opacity: 0.5; }
+    .rule-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+    .rule-title { color: #fff; font-weight: 700; font-size: .9rem; display: flex; align-items: center; gap: 6px; }
+    .rule-layer { font-size: .55rem; padding: 2px 8px; border-radius: 10px; background: rgba(255,23,68,.12); color: #ff1744; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .rule-layer.advanced { background: rgba(0,230,118,.15); color: #00e676; }
+    .rule-layer.vip { background: rgba(255,171,0,.15); color: #ffab00; }
+    .rule-desc { color: #777; font-size: .72rem; margin-bottom: 8px; }
+    .rule-config { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; margin-bottom: 8px; }
+    .rule-config-item { background: #141414; border-radius: 6px; padding: 6px 8px; }
+    .rule-config-item label { color: #666; font-size: .6rem; text-transform: uppercase; display: block; letter-spacing: .5px; margin-bottom: 2px; }
+    .rule-config-item input { background: #0a0a0a; border: 1px solid #1a1a1a; padding: 4px 8px; font-size: .78rem; color: #ffab00; font-family: monospace; width: 100%; border-radius: 4px; }
+    .rule-config-item input:focus { border-color: #ff1744; outline: none; }
+    .rule-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .toggle-sw { display: inline-flex; align-items: center; gap: 6px; font-size: .7rem; color: #888; cursor: pointer; user-select: none; }
+    .toggle-sw input { display: none; }
+    .toggle-sw .knob { width: 30px; height: 16px; background: #2a2a2a; border-radius: 8px; position: relative; transition: background .2s; }
+    .toggle-sw .knob::after { content: ''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; background: #888; border-radius: 50%; transition: all .2s; }
+    .toggle-sw input:checked + .knob { background: #00e676; }
+    .toggle-sw input:checked + .knob::after { left: 16px; background: #fff; }
+
+    .learn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    @media (max-width: 600px) { .learn-grid { grid-template-columns: 1fr; } }
+    .learn-card { background: linear-gradient(135deg, #141414, #0d0d0d); border: 1px solid #1a1a1a; border-radius: 10px; padding: 12px; }
+    .learn-card .title { color: #888; font-size: .62rem; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .learn-card .big { color: #00e676; font-family: monospace; font-size: 1.4rem; font-weight: 900; }
+    .learn-card .big.amber { color: #ffab00; }
+    .learn-card .big.blue { color: #66b2ff; }
+    .learn-card .sub { color: #666; font-size: .68rem; margin-top: 2px; }
+
+    .perf-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+    .perf-table th, .perf-table td { text-align: left; padding: 8px; border-bottom: 1px solid #1a1a1a; }
+    .perf-table th { color: #888; text-transform: uppercase; font-size: .6rem; letter-spacing: .5px; }
+    .perf-table td { color: #ccc; }
+    .lift-pos { color: #00e676; font-weight: 800; }
+    .lift-neg { color: #ff1744; font-weight: 800; }
+
+    .calib-bar { height: 6px; background: #1a1a1a; border-radius: 3px; overflow: hidden; margin: 4px 0; }
+    .calib-fill { height: 100%; background: linear-gradient(90deg, #ffab00, #00e676); }
+
+    .brain-btn {
+      background: linear-gradient(135deg, #00e676, #00b0ff);
+      color: #0a0a0a; border: none; padding: 12px 20px; border-radius: 10px;
+      font-weight: 900; cursor: pointer; display: inline-flex;
+      align-items: center; gap: 8px; font-size: .82rem;
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+    .brain-btn:hover { opacity: 0.9; }
+    .brain-btn.outline { background: transparent; color: #00e676; border: 2px solid #00e676; }
+
+    .odds-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+    .odds-card { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 10px; padding: 12px; text-align: center; }
+    .odds-card .num { font-family: monospace; font-size: 1.2rem; font-weight: 900; color: #00e676; }
+    .odds-card .lbl { font-size: .6rem; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-top: 4px; }
+  </style>
+</head>
+<body>
+<div class="admin-container">
+  <div class="header">
+    <div class="logo">BET<span>PULSE</span> <span style="font-size:.7rem;color:#ff1744;">ADMIN</span></div>
+    <div><span id="adminName" style="color:#888;margin-right:12px;font-size:.8rem;">Admin</span><button class="btn small outline" onclick="logout()"><i class="fas fa-times"></i></button></div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="value" id="statUsers">0</div><div class="label">Users</div></div>
+    <div class="stat-card"><div class="value" id="statVIP">0</div><div class="label">Subscribed</div></div>
+    <div class="stat-card"><div class="value" id="statTickets">0</div><div class="label">Tickets</div></div>
+    <div class="stat-card"><div class="value" id="statTokens">0</div><div class="label">Tokens</div></div>
+    <div class="stat-card"><div class="value" id="statMessages">0</div><div class="label">Chat Msgs</div></div>
+  </div>
+
+  <div class="stats-grid" style="grid-template-columns:1fr 1fr;">
+    <div class="stat-card"><div class="value" id="statCoins" style="color:#ffab00;">0</div><div class="label">BP Coins</div></div>
+    <div class="stat-card"><div class="value" id="statCash" style="color:#00e676;">$0</div><div class="label">Cash Paid</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="active" data-tab="brain"><i class="fas fa-brain"></i> Brain</button>
+    <button data-tab="learning"><i class="fas fa-chart-line"></i> Learning</button>
+    <button data-tab="xg"><i class="fas fa-bullseye"></i> xG Data</button>
+    <button data-tab="odds"><i class="fas fa-coins"></i> Odds API</button>
+    <button data-tab="users"><i class="fas fa-users"></i> Users</button>
+    <button data-tab="tickets"><i class="fas fa-ticket-alt"></i> Tickets</button>
+    <button data-tab="tokens"><i class="fas fa-key"></i> Tokens</button>
+    <button data-tab="rules"><i class="fas fa-sliders-h"></i> Rules</button>
+    <button data-tab="notifs"><i class="fas fa-bell"></i> Alerts</button>
+  </div>
+
+  <!-- BRAIN -->
+  <div class="tab-content active" id="tab-brain">
+    <div class="section">
+      <h3 style="color:#00e676;margin-bottom:12px;"><i class="fas fa-brain"></i> BTTS AI Brain</h3>
+      <p style="color:#888;font-size:.8rem;margin-bottom:14px;">
+        Everything the engine has learned — rules, tuned weights, calibration, meta-learner, team history, H2H, league knowledge, xG stats.
+      </p>
+      <div id="brainStats"><p class="loading-text">Loading brain stats...</p></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
+        <button class="brain-btn" onclick="downloadBrain()"><i class="fas fa-download"></i> Export Brain</button>
+        <label class="brain-btn outline" style="cursor:pointer;">
+          <i class="fas fa-upload"></i> Import Brain
+          <input type="file" accept="application/json" id="brainFile" style="display:none;" onchange="importBrain(event)" />
+        </label>
+        <button class="brain-btn outline" onclick="retrainNow()"><i class="fas fa-sync"></i> Retrain Now</button>
+      </div>
+      <div style="margin-top:12px;padding:12px;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;font-size:.72rem;color:#888;line-height:1.6;">
+        <strong style="color:#ffab00;">Import modes:</strong> Default merge keeps local + adds missing. Replace wipes local first.
+        <div style="margin-top:8px;">
+          <label style="display:inline-flex;align-items:center;gap:6px;color:#ccc;font-size:.72rem;">
+            <input type="checkbox" id="replaceMode" /> Replace existing data
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEARNING -->
+  <div class="tab-content" id="tab-learning">
+    <div class="section">
+      <h3 style="color:#ff1744;margin-bottom:12px;"><i class="fas fa-chart-line"></i> BTTS Learning State</h3>
+      <div id="learningContent"><p class="loading-text">Loading...</p></div>
+    </div>
+  </div>
+
+  <!-- XG -->
+  <div class="tab-content" id="tab-xg">
+    <div class="section">
+      <h3 style="color:#00e676;margin-bottom:12px;"><i class="fas fa-bullseye"></i> xG Data Coverage</h3>
+      <div id="xgStats"><p class="loading-text">Loading xG stats...</p></div>
+      <div style="margin-top:12px;">
+        <button class="btn" onclick="backfillXG()"><i class="fas fa-sync"></i> Backfill xG from settled matches</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ODDS -->
+  <div class="tab-content" id="tab-odds">
+    <div class="section">
+      <h3 style="color:#00e676;margin-bottom:12px;"><i class="fas fa-coins"></i> Bookmaker Odds</h3>
+      <div id="oddsStats"><p class="loading-text">Loading...</p></div>
+      <div style="margin-top:12px;">
+        <button class="btn" onclick="refreshOdds()"><i class="fas fa-sync"></i> Refresh Odds Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- USERS -->
+  <div class="tab-content" id="tab-users">
+    <div class="section">
+      <h3 style="color:#ff1744;margin-bottom:12px;"><i class="fas fa-search"></i> Users</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <input type="text" id="searchInput" placeholder="Search username..." style="flex:1;min-width:150px;" />
+        <button class="btn" onclick="searchUsers()"><i class="fas fa-search"></i> Search</button>
+        <button class="btn outline" onclick="loadUsers()"><i class="fas fa-sync"></i> All</button>
+      </div>
+      <div id="userList" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- TICKETS -->
+  <div class="tab-content" id="tab-tickets">
+    <div class="section">
+      <h3 style="color:#ff1744;margin-bottom:12px;"><i class="fas fa-plus"></i> Upload Ticket</h3>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('imageInput').click()">
+        <i class="fas fa-cloud-upload-alt" style="font-size:2rem;color:#555;"></i>
+        <div style="color:#888;font-size:.85rem;margin-top:8px;" id="uploadLabel">Tap to upload image</div>
+        <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="handleImage(event)" />
+        <img id="imagePreview" class="upload-preview" style="display:none;" />
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Title</label><input type="text" id="ticketTitle" placeholder="BTTS Elite Double" /></div>
+        <div class="form-group"><label>Match info</label><input type="text" id="matchInfo" placeholder="Arsenal vs Chelsea" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Visibility</label>
+          <select id="ticketVisibility"><option value="public">Public</option><option value="vip">VIP only</option></select>
+        </div>
+        <div class="form-group"><label>Confidence</label>
+          <select id="ticketConfidence"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Publish Tier</label>
+          <select id="publishTier">
+            <option value="elite">Elite</option>
+            <option value="strong" selected>Strong</option>
+            <option value="value">Value</option>
+            <option value="aggressive">Aggressive</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Legs</label><input type="number" id="legs" placeholder="3" min="0" oninput="updatePayoutPreview()" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Total Odds</label><input type="number" id="totalOdds" placeholder="5.00" step="0.01" oninput="updatePayoutPreview()" /></div>
+        <div class="form-group"><label>Stake ($)</label><input type="number" id="stake" placeholder="1" value="1" step="0.5" oninput="updatePayoutPreview()" /></div>
+      </div>
+      <div class="payout-preview">
+        <div class="payout-cell"><div class="label">Total Odds</div><div class="val odds" id="previewOdds">--</div></div>
+        <div class="payout-cell"><div class="label">$1 Wins</div><div class="val" id="previewPayout">$--</div></div>
+        <div class="payout-cell"><div class="label">Legs</div><div class="val legs" id="previewLegs">--</div></div>
+      </div>
+      <div class="form-group"><label>Description</label><textarea id="description" rows="3" placeholder="Notes..."></textarea></div>
+      <button class="btn gold" onclick="createTicket()" style="width:100%;margin-top:12px;"><i class="fas fa-save"></i> Publish Ticket</button>
+    </div>
+    <div class="section"><h3 style="color:#ff1744;margin-bottom:12px;"><i class="fas fa-list"></i> All Tickets</h3><div id="ticketList"></div></div>
+  </div>
+
+  <!-- TOKENS -->
+  <div class="tab-content" id="tab-tokens">
+    <div class="section">
+      <h3 style="color:#ff1744;margin-bottom:12px;"><i class="fas fa-key"></i> Generate Token</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Days</label>
+          <select id="tokenDays">
+            <option value="1">1 Day</option><option value="2">2 Days</option>
+            <option value="7">7 Days</option><option value="14">14 Days</option><option value="30">30 Days</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;"><button class="btn" onclick="generateToken()"><i class="fas fa-plus"></i> Generate</button></div>
+      </div>
+      <div id="tokenResult"></div>
+    </div>
+    <div class="section"><h3 style="color:#ff1744;margin-bottom:12px;"><i class="fas fa-history"></i> Tokens</h3><div id="tokenList"></div></div>
+  </div>
+
+  <!-- RULES -->
+  <div class="tab-content" id="tab-rules">
+    <div class="section">
+      <h3 style="color:#ff1744;margin-bottom:6px;"><i class="fas fa-sliders-h"></i> BTTS Rules</h3>
+      <p style="color:#888;font-size:.75rem;margin-bottom:14px;">Weights auto-tune from RulePerformance.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+        <button class="btn" onclick="exportRules()"><i class="fas fa-download"></i> Export</button>
+        <label class="btn outline" style="cursor:pointer;margin:0;">
+          <i class="fas fa-upload"></i> Import
+          <input type="file" accept="application/json" id="importFile" style="display:none;" onchange="importRules(event)" />
+        </label>
+      </div>
+      <div id="rulesList"><p class="loading-text">Loading...</p></div>
+    </div>
+  </div>
+
+  <!-- NOTIFS -->
+  <div class="tab-content" id="tab-notifs">
+    <div class="section">
+      <h3 style="color:#ff1744;margin-bottom:12px;"><i class="fas fa-paper-plane"></i> Send Notification</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Title</label><input type="text" id="notifTitle" placeholder="New BTTS picks are live!" /></div>
+        <div class="form-group"><label>Type</label>
+          <select id="notifType">
+            <option value="signal">BTTS</option><option value="ticket">Ticket</option>
+            <option value="chat">Chat</option><option value="system">System</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>Body</label><textarea id="notifBody" rows="2"></textarea></div>
+      <button class="btn" onclick="sendNotification()"><i class="fas fa-bell"></i> Send to all users</button>
+    </div>
+    <div class="section"><h3 style="color:#ff1744;margin-bottom:12px;"><i class="fas fa-list"></i> Recent</h3><div id="notifAdminList"></div></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/login';
+let selectedImage = null;
+
+function handleImage(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  selectedImage = file;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const preview = document.getElementById('imagePreview');
+    preview.src = ev.target.result;
+    preview.style.display = 'block';
+    document.getElementById('uploadZone').classList.add('has-image');
+    document.getElementById('uploadLabel').innerHTML = '<i class="fas fa-check-circle"></i> ' + file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+function updatePayoutPreview() {
+  const odds = parseFloat(document.getElementById('totalOdds').value) || 0;
+  const stake = parseFloat(document.getElementById('stake').value) || 1;
+  const legs = parseInt(document.getElementById('legs').value) || 0;
+  document.getElementById('previewOdds').textContent = odds > 0 ? odds.toFixed(2) + 'x' : '--';
+  document.getElementById('previewPayout').textContent = odds > 0 ? '$' + (stake * odds).toFixed(2) : '$--';
+  document.getElementById('previewLegs').textContent = legs > 0 ? legs : '--';
+}
+
+async function loadStats() {
+  const res = await fetch('/api/admin/stats', { headers: { 'Authorization': 'Bearer ' + token } });
+  const d = await res.json();
+  document.getElementById('statUsers').textContent = d.totalUsers || 0;
+  document.getElementById('statVIP').textContent = d.vipUsers || 0;
+  document.getElementById('statTickets').textContent = d.totalTickets || 0;
+  document.getElementById('statTokens').textContent = d.totalTokens || 0;
+  document.getElementById('statMessages').textContent = d.totalMessages || 0;
+  document.getElementById('statCoins').textContent = d.totalCoins || 0;
+  document.getElementById('statCash').textContent = '$' + (d.totalCashPaid || 0);
+}
+
+// ═══ BRAIN ═══
+async function loadBrainStats() {
+  const c = document.getElementById('brainStats');
+  try {
+    const res = await fetch('/api/admin/brain/stats', { headers: { 'Authorization': 'Bearer ' + token } });
+    const d = await res.json();
+    const k = d.counts;
+    c.innerHTML = `
+      <div class="odds-strip">
+        <div class="odds-card"><div class="num">${k.rules}</div><div class="lbl">Rules</div></div>
+        <div class="odds-card"><div class="num">${k.rulePerformance}</div><div class="lbl">Rule Perf</div></div>
+        <div class="odds-card"><div class="num">${k.calibration}</div><div class="lbl">Calibration</div></div>
+      </div>
+      <div class="odds-strip">
+        <div class="odds-card"><div class="num">${k.metaLearners}</div><div class="lbl">Meta</div></div>
+        <div class="odds-card"><div class="num">${k.teamHistory}</div><div class="lbl">Teams</div></div>
+        <div class="odds-card"><div class="num">${k.h2h}</div><div class="lbl">H2H</div></div>
+      </div>
+      <div class="odds-strip">
+        <div class="odds-card"><div class="num">${k.matchStats}</div><div class="lbl">xG Stats</div></div>
+        <div class="odds-card"><div class="num">${k.settledSnapshots}</div><div class="lbl">Snapshots</div></div>
+        <div class="odds-card"><div class="num">${k.settledPredictions}</div><div class="lbl">Settled</div></div>
+      </div>`;
+  } catch (e) { c.innerHTML = '<p style="color:#ff1744;">Error</p>'; }
+}
+
+async function downloadBrain() {
+  toast('Preparing export...');
+  const res = await fetch('/api/admin/brain/export', { headers: { 'Authorization': 'Bearer ' + token } });
+  if (!res.ok) return toast('Export failed');
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'betpulse-brain-' + new Date().toISOString().split('T')[0] + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast('Exported');
+}
+
+async function importBrain(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if (!parsed.meta && !parsed.rules) return toast('Invalid file');
+    const replace = document.getElementById('replaceMode').checked;
+    const mode = replace ? 'replace' : 'merge';
+    if (!confirm(`Import brain in ${mode.toUpperCase()} mode?`)) return;
+    toast('Importing...');
+    const res = await fetch(`/api/admin/brain/import?mode=${mode}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: text,
+    });
+    const d = await res.json();
+    if (d.success) {
+      toast('Imported successfully');
+      loadBrainStats();
+    } else toast('Error: ' + d.error);
+  } catch (err) { toast('Failed: ' + err.message); }
+}
+
+async function retrainNow() {
+  toast('Retraining...');
+  const res = await fetch('/api/admin/brain/retrain', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+  const d = await res.json();
+  if (d.success) { toast(`Done · Rules ${d.counts.rulePerformance}, Calib ${d.counts.calibration}, Meta ${d.counts.metaLearners}`); loadBrainStats(); }
+  else toast('Error: ' + d.error);
+}
+
+// ═══ LEARNING ═══
+async function loadLearning() {
+  const c = document.getElementById('learningContent');
+  c.innerHTML = '<p class="loading-text">Loading...</p>';
+  try {
+    const res = await fetch('/api/admin/learning', { headers: { 'Authorization': 'Bearer ' + token } });
+    const d = await res.json();
+    if (!d.success) return;
+    const rp = d.rulePerformance || [];
+    const calib = d.calibration || [];
+    const ml = d.metaLearners || [];
+    const rolling = d.rolling || [];
+    const latest = rolling[0];
+
+    let html = `<div class="learn-grid">
+      <div class="learn-card"><div class="title">Settled predictions</div><div class="big">${d.totalSnapshots}</div><div class="sub">Ready for training</div></div>
+      <div class="learn-card"><div class="title">Active rules</div><div class="big amber">${rp.filter(r => !r.muted).length}</div><div class="sub">${rp.filter(r => r.muted).length} muted</div></div>
+    </div>`;
+
+    if (ml.length) {
+      html += `<div class="learn-grid">`;
+      for (const m of ml) html += `<div class="learn-card"><div class="title">Meta — ${m.market}</div><div class="big ${m.accuracy >= 0.6 ? '' : 'amber'}">${(m.accuracy * 100).toFixed(1)}%</div><div class="sub">n=${m.samples}</div></div>`;
+      html += `</div>`;
+    }
+
+    if (latest) {
+      html += `<div class="learn-grid">
+        <div class="learn-card"><div class="title">Rolling BTTS (last ${latest.sampleSize})</div><div class="big">${latest.bttsAcc}%</div></div>
+      </div>`;
+    }
+
+    if (rp.length) {
+      html += `<div class="section"><h3 style="color:#ff1744;font-size:.9rem;margin-bottom:10px;"><i class="fas fa-trophy"></i> Rule Performance</h3>
+        <table class="perf-table">
+          <thead><tr><th>Rule</th><th>Triggers</th><th>Hit</th><th>Lift</th><th>Weight</th></tr></thead>
+          <tbody>${rp.slice(0, 25).map(r => `
+            <tr>
+              <td>${r.ruleKey.replace(/_/g, ' ')}</td>
+              <td>${r.totalTriggers}</td>
+              <td>${(r.hitRate * 100).toFixed(1)}%</td>
+              <td class="${r.lift >= 0 ? 'lift-pos' : 'lift-neg'}">${r.lift >= 0 ? '+' : ''}${(r.lift * 100).toFixed(1)}%</td>
+              <td>${r.currentWeight.toFixed(2)}x${r.muted ? ' · MUTED' : ''}</td>
+            </tr>`).join('')}</tbody>
+        </table></div>`;
+    }
+
+    if (calib.length) {
+      html += `<div class="section"><h3 style="color:#ff1744;font-size:.9rem;margin-bottom:10px;"><i class="fas fa-ruler-combined"></i> Calibration</h3>`;
+      for (const c of calib) {
+        html += `<div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px;">
+            <span style="color:#fff;font-weight:700;">${c.market}</span>
+            <span style="color:#888;">Brier: <strong style="color:#ffab00;">${c.brierScore}</strong> · n=${c.totalSamples}</span>
+          </div>
+          ${c.buckets.map(b => `
+            <div style="font-size:.7rem;color:#888;margin-bottom:2px;">
+              ${b.rawMin.toFixed(2)}–${b.rawMax.toFixed(2)}: ${(b.calibratedProb * 100).toFixed(0)}% (n=${b.predictedCount})
+            </div>
+            <div class="calib-bar"><div class="calib-fill" style="width:${(b.calibratedProb * 100).toFixed(0)}%"></div></div>
+          `).join('')}
+        </div>`;
+      }
+      html += `</div>`;
+    }
+    c.innerHTML = html || '<p class="loading-text">Learning warming up — needs 50+ settled.</p>';
+  } catch (e) { c.innerHTML = '<p style="color:#ff1744;">Error</p>'; }
+}
+
+// ═══ XG ═══
+async function loadXGStats() {
+  const c = document.getElementById('xgStats');
+  try {
+    const res = await fetch('/api/admin/xg/stats', { headers: { 'Authorization': 'Bearer ' + token } });
+    const d = await res.json();
+    c.innerHTML = `
+      <div class="odds-strip">
+        <div class="odds-card"><div class="num">${d.totalMatchStats || 0}</div><div class="lbl">Match xG records</div></div>
+        <div class="odds-card"><div class="num">${d.teamsWithXG || 0}</div><div class="lbl">Teams with xG</div></div>
+        <div class="odds-card"><div class="num">${d.teamsWithXG && d.teamsWithXG > 100 ? '✓' : '...'}</div><div class="lbl">Status</div></div>
+      </div>
+      <p style="color:#888;font-size:.75rem;margin-top:10px;">
+        xG data comes from Live Football Data API. Every settled match triggers a backfill. Teams need 3+ xG matches to activate xG-blended predictions.
+      </p>`;
+  } catch (e) { c.innerHTML = '<p style="color:#ff1744;">Error</p>'; }
+}
+async function backfillXG() {
+  toast('Backfilling...');
+  const res = await fetch('/api/admin/xg/backfill', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+  toast('Backfill started — refresh in a minute');
+}
+
+// ═══ ODDS ═══
+async function loadOddsStats() {
+  const c = document.getElementById('oddsStats');
+  try {
+    const res = await fetch('/api/admin/odds/stats', { headers: { 'Authorization': 'Bearer ' + token } });
+    const d = await res.json();
+    c.innerHTML = `
+      <div class="odds-strip">
+        <div class="odds-card"><div class="num">${d.total || 0}</div><div class="lbl">Total events</div></div>
+        <div class="odds-card"><div class="num">${d.linked || 0}</div><div class="lbl">Linked to matches</div></div>
+        <div class="odds-card"><div class="num">${(d.total || 0) - (d.linked || 0)}</div><div class="lbl">Unmatched</div></div>
+      </div>
+      <p style="color:#888;font-size:.75rem;margin-top:10px;">Bookmaker odds refresh every 30 min. Matched by team name + kickoff window.</p>`;
+  } catch (e) { c.innerHTML = '<p style="color:#ff1744;">Error</p>'; }
+}
+async function refreshOdds() {
+  toast('Refreshing odds...');
+  await fetch('/api/admin/odds/refresh', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+  toast('Refresh triggered');
+  setTimeout(loadOddsStats, 4000);
+}
+
+// ═══ USERS ═══
+async function loadUsers() {
+  const res = await fetch('/api/admin/users', { headers: { 'Authorization': 'Bearer ' + token } });
+  const d = await res.json();
+  renderUsers(d.users || []);
+}
+async function searchUsers() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return loadUsers();
+  const res = await fetch('/api/admin/search?q=' + encodeURIComponent(q), { headers: { 'Authorization': 'Bearer ' + token } });
+  const d = await res.json();
+  renderUsers(d.users || []);
+}
+function renderUsers(users) {
+  const c = document.getElementById('userList');
+  if (!users.length) { c.innerHTML = '<div class="empty">No users</div>'; return; }
+  c.innerHTML = users.map(u => {
+    const active = u.vipExpiry && new Date(u.vipExpiry) > new Date();
+    return `
+      <div style="padding:10px 14px;background:#0a0a0a;border-radius:8px;margin-bottom:6px;border:1px solid #1a1a1a;">
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-weight:600;color:#fff;">${u.username} ${active ? '<i class="fas fa-circle" style="color:#00e676;font-size:.5rem;"></i>' : ''}</div>
+            <div style="font-size:.75rem;color:#888;">
+              ${u.accountType} · ${u.betpulseCoins || 0} BP · ${u.subscribedReferrals || 0}/${u.referrals || 0} refs · $${u.cashEarnedUSD || 0}
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <button class="btn small" onclick="upgradeUser('${u.username}','day2')">$1/2d</button>
+            <button class="btn small" onclick="upgradeUser('${u.username}','week2')">$5/2w</button>
+            <button class="btn small" onclick="upgradeUser('${u.username}','month')">$10/30d</button>
+            <button class="btn small outline" onclick="upgradeUser('${u.username}','free')">Free</button>
+            <button class="btn small" style="color:#ff1744;border-color:#ff1744;background:transparent;" onclick="deleteUser('${u.username}')"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+async function upgradeUser(username, plan) {
+  const labels = { day2: '2 Days ($1)', week2: '2 Weeks ($5)', month: '1 Month ($10)', free: 'Free' };
+  if (!confirm(`Set ${username} to ${labels[plan]}?`)) return;
+  const res = await fetch('/api/admin/upgrade', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ username, plan }),
+  });
+  const d = await res.json();
+  toast(d.success ? 'Done' : 'Error');
+  loadUsers(); loadStats();
+}
+async function deleteUser(username) {
+  if (!confirm('Delete ' + username + '?')) return;
+  await fetch('/api/admin/user/' + username, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+  toast('Deleted'); loadUsers(); loadStats();
+}
+
+// ═══ TICKETS ═══
+async function createTicket() {
+  if (!selectedImage) return toast('Upload an image');
+  const fd = new FormData();
+  fd.append('image', selectedImage);
+  fd.append('title', document.getElementById('ticketTitle').value.trim());
+  fd.append('matchInfo', document.getElementById('matchInfo').value.trim());
+  fd.append('description', document.getElementById('description').value.trim());
+  fd.append('visibility', document.getElementById('ticketVisibility').value);
+  fd.append('confidence', document.getElementById('ticketConfidence').value);
+  fd.append('totalOdds', document.getElementById('totalOdds').value || '0');
+  fd.append('stake', document.getElementById('stake').value || '1');
+  fd.append('legs', document.getElementById('legs').value || '0');
+  fd.append('publishTier', document.getElementById('publishTier').value);
+  toast('Uploading...');
+  const res = await fetch('/api/admin/tickets', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd });
+  const d = await res.json();
+  if (d.success) {
+    toast('Published');
+    selectedImage = null;
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('uploadZone').classList.remove('has-image');
+    document.getElementById('uploadLabel').textContent = 'Tap to upload image';
+    ['ticketTitle','matchInfo','description','totalOdds','legs'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('stake').value = '1';
+    document.getElementById('imageInput').value = '';
+    updatePayoutPreview();
+    loadTickets(); loadStats();
+  } else toast('Error: ' + d.error);
+}
+async function loadTickets() {
+  const res = await fetch('/api/admin/tickets', { headers: { 'Authorization': 'Bearer ' + token } });
+  const d = await res.json();
+  const c = document.getElementById('ticketList');
+  const t = d.tickets || [];
+  if (!t.length) { c.innerHTML = '<div class="empty">No tickets</div>'; return; }
+  c.innerHTML = t.map(x => `
+    <div style="border:1px solid ${x.visibility === 'vip' ? '#ffab00' : '#1a1a1a'};background:#0a0a0a;padding:12px;border-radius:8px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;">
+        <div>
+          <div style="color:#fff;font-weight:700;">${x.title || 'Ticket'}</div>
+          <div style="font-size:.72rem;color:#888;">
+            <span class="status-badge ${x.status}">${x.status}</span>
+            ${x.visibility === 'vip' ? '<span style="color:#ffab00;margin-left:6px;">VIP</span>' : ''}
+            ${x.publishTier ? '<span style="color:#66b2ff;margin-left:6px;">' + x.publishTier + '</span>' : ''}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn small" style="background:#00e676;color:#0a0a0a;" onclick="setTicketStatus('${x._id}','won')">WON</button>
+          <button class="btn small" style="background:#ff1744;color:#fff;" onclick="setTicketStatus('${x._id}','lost')">LOST</button>
+          <button class="btn small outline" onclick="setTicketStatus('${x._id}','pending')">Reset</button>
+          <button class="btn small outline" style="color:#ff1744;" onclick="deleteTicket('${x._id}')"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+      ${x.imageUrl ? `<img src="${x.imageUrl}" class="ticket-thumb" />` : ''}
+    </div>`).join('');
+}
+async function setTicketStatus(id, status) {
+  let note = '';
+  if (status === 'won' || status === 'lost') note = prompt('Add note:') || '';
+  await fetch('/api/admin/tickets/' + id, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ status, resultNote: note }),
+  });
+  toast(`Marked ${status}`); loadTickets();
+}
+async function deleteTicket(id) {
+  if (!confirm('Delete?')) return;
+  await fetch('/api/admin/tickets/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+  toast('Deleted'); loadTickets(); loadStats();
+}
+
+// ═══ TOKENS ═══
+async function generateToken() {
+  const days = parseInt(document.getElementById('tokenDays').value);
+  const res = await fetch('/api/admin/token', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ days }),
+  });
+  const d = await res.json();
+  if (d.success) {
+    document.getElementById('tokenResult').innerHTML = `
+      <div style="background:#0a0a0a;padding:12px;border-radius:8px;margin-top:8px;">
+        <div style="color:#ffab00;font-family:monospace;font-size:1rem;">${d.token}</div>
+        <button class="btn small" onclick="copyText('${d.token}')"><i class="fas fa-copy"></i> Copy</button>
+      </div>`;
+    toast('Generated'); loadTokens(); loadStats();
+  }
+}
+async function loadTokens() {
+  const res = await fetch('/api/admin/tokens', { headers: { 'Authorization': 'Bearer ' + token } });
+  const d = await res.json();
+  const c = document.getElementById('tokenList');
+  const t = d.tokens || [];
+  if (!t.length) { c.innerHTML = '<div class="empty">No tokens</div>'; return; }
+  c.innerHTML = t.slice(0, 30).map(x => `
+    <div style="padding:8px;background:#0a0a0a;border-radius:6px;margin-bottom:4px;border:1px solid #1a1a1a;">
+      <code style="color:#ffab00;font-size:.78rem;">${x.token}</code>
+      <div style="font-size:.68rem;color:#888;">${x.days}d · ${x.isUsed ? 'Used by ' + x.usedBy : 'Available'}</div>
+    </div>`).join('');
+}
+
+// ═══ RULES ═══
+let allRules = [];
+async function loadRules() {
+  const c = document.getElementById('rulesList');
+  c.innerHTML = '<p class="loading-text">Loading...</p>';
+  try {
+    const res = await fetch('/api/admin/rules', { headers: { 'Authorization': 'Bearer ' + token } });
+    const d = await res.json();
+    allRules = d.rules || [];
+    renderRules();
+  } catch (e) { c.innerHTML = '<p style="color:#ff1744;">Error</p>'; }
+}
+function renderRules() {
+  const c = document.getElementById('rulesList');
+  if (!allRules.length) { c.innerHTML = '<div class="empty">No rules</div>'; return; }
+  c.innerHTML = allRules.map(r => {
+    const entries = Object.entries(r.config || {});
+    const layerClass = r.layer === 'advanced' ? 'advanced' : r.layer === 'vip' ? 'vip' : '';
+    return `
+      <div class="rule-card ${r.enabled ? '' : 'disabled'}">
+        <div class="rule-header">
+          <div class="rule-title"><i class="fas fa-circle" style="color:${r.enabled ? '#00e676' : '#555'};font-size:.5rem;"></i> ${r.name}</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="rule-layer ${layerClass}">${r.layer}</span>
+            <label class="toggle-sw">
+              <input type="checkbox" ${r.enabled ? 'checked' : ''} onchange="toggleRule('${r.key}', this.checked)" />
+              <span class="knob"></span>
+            </label>
+          </div>
+        </div>
+        <div class="rule-desc">${r.description || ''}</div>
+        ${entries.length ? `
+          <div class="rule-config">
+            ${entries.map(([k, v]) => `
+              <div class="rule-config-item">
+                <label>${k}</label>
+                <input type="text" data-rule="${r.key}" data-field="${k}" value="${typeof v === 'object' ? JSON.stringify(v) : v}" />
+              </div>`).join('')}
+          </div>` : ''}
+        <div class="rule-actions">
+          <button class="btn small" onclick="saveRule('${r.key}')"><i class="fas fa-save"></i> Save</button>
+          <button class="btn small outline" onclick="deleteRule('${r.key}')"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>`;
+  }).join('');
+}
+async function toggleRule(key, enabled) {
+  await fetch('/api/admin/rules/' + key, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ enabled }),
+  });
+  toast(enabled ? 'Enabled' : 'Disabled'); loadRules();
+}
+async function saveRule(key) {
+  const inputs = document.querySelectorAll(`input[data-rule="${key}"]`);
+  const cfg = {};
+  inputs.forEach(inp => {
+    let v = inp.value.trim();
+    if (!isNaN(v) && v !== '') v = Number(v);
+    else if (v.startsWith('[') || v.startsWith('{')) { try { v = JSON.parse(v); } catch (e) {} }
+    cfg[inp.dataset.field] = v;
+  });
+  await fetch('/api/admin/rules/' + key, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ config: cfg }),
+  });
+  toast('Saved');
+}
+async function deleteRule(key) {
+  if (!confirm('Delete rule?')) return;
+  await fetch('/api/admin/rules/' + key, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+  toast('Deleted'); loadRules();
+}
+async function exportRules() {
+  const res = await fetch('/api/admin/ai/export', { headers: { 'Authorization': 'Bearer ' + token } });
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'betpulse-rules.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast('Exported');
+}
+async function importRules(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  const text = await file.text();
+  const parsed = JSON.parse(text);
+  if (!parsed.rules) return toast('Invalid');
+  await fetch('/api/admin/ai/import', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ rules: parsed.rules }),
+  });
+  toast('Imported'); loadRules();
+}
+
+// ═══ NOTIFS ═══
+async function sendNotification() {
+  const title = document.getElementById('notifTitle').value.trim();
+  const body = document.getElementById('notifBody').value.trim();
+  const type = document.getElementById('notifType').value;
+  if (!title) return toast('Title required');
+  await fetch('/api/admin/notifications', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ title, body, type }),
+  });
+  toast('Sent'); document.getElementById('notifTitle').value = ''; document.getElementById('notifBody').value = '';
+  loadAdminNotifs();
+}
+async function loadAdminNotifs() {
+  const res = await fetch('/api/admin/notifications', { headers: { 'Authorization': 'Bearer ' + token } });
+  const d = await res.json();
+  const c = document.getElementById('notifAdminList');
+  const n = d.notifications || [];
+  if (!n.length) { c.innerHTML = '<div class="empty">None</div>'; return; }
+  c.innerHTML = n.slice(0, 40).map(x => `
+    <div style="padding:10px;background:#0a0a0a;border-radius:8px;margin-bottom:6px;border:1px solid #1a1a1a;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div>
+          <div style="color:#fff;font-weight:600;">${x.title}</div>
+          ${x.body ? `<div style="color:#888;font-size:.78rem;margin-top:2px;">${x.body}</div>` : ''}
+          <div style="color:#555;font-size:.62rem;margin-top:4px;">${x.type} · ${new Date(x.createdAt).toLocaleString()}</div>
+        </div>
+        <button class="btn small outline" style="color:#ff1744;" onclick="deleteNotif('${x._id}')"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+async function deleteNotif(id) {
+  if (!confirm('Delete?')) return;
+  await fetch('/api/admin/notifications/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+  toast('Deleted'); loadAdminNotifs();
+}
+
+// ═══ TABS ═══
+document.querySelectorAll('.tabs button').forEach(btn => {
+  btn.addEventListener('click', function () {
+    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+    if (this.dataset.tab === 'brain') loadBrainStats();
+    if (this.dataset.tab === 'learning') loadLearning();
+    if (this.dataset.tab === 'xg') loadXGStats();
+    if (this.dataset.tab === 'odds') loadOddsStats();
+    if (this.dataset.tab === 'users') loadUsers();
+    if (this.dataset.tab === 'tickets') loadTickets();
+    if (this.dataset.tab === 'tokens') loadTokens();
+    if (this.dataset.tab === 'rules') loadRules();
+    if (this.dataset.tab === 'notifs') loadAdminNotifs();
+  });
+});
+
+function copyText(t) { navigator.clipboard.writeText(t); toast('Copied'); }
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2400);
+}
+function logout() { localStorage.removeItem('token'); window.location.href = '/login'; }
+
+async function init() {
+  const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+  const d = await res.json();
+  if (!d.success || (d.user.role !== 'admin' && d.user.role !== 'superadmin')) {
+    window.location.href = '/login'; return;
+  }
+  document.getElementById('adminName').textContent = d.user.username;
+  await loadStats();
+  await loadBrainStats();
+  updatePayoutPreview();
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
